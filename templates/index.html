@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seastar Coroutine Monitor</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+</head>
+<body>
+
+
+    <nav class="blue darken-2">
+        <div class="container">
+            <a href="#" class="brand-logo">Seastar Coroutine Monitor</a>
+        </div>
+    </nav>
+
+
+    <div class="container">
+        <div class="row">
+            <div class="col s12">
+                <a class="btn blue" id="refresh-button">Refresh Page</a>
+                <a class="btn green" id="view-json-button">View JSON Data</a>
+            </div>
+        </div>
+        <table id="coroutine-table" class="highlight">
+            <thead>
+                <tr>
+                    <th>Task Address</th>
+                    <th>Function</th>
+                    <th>State</th>
+                    <th>Execution Time (ns)</th>
+                </tr>
+
+            </thead>
+            <tbody>
+                <!-- Data will be populated here -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Modal Structure -->
+
+    <div id="json-modal" class="modal">
+
+        <div class="modal-content">
+            <h4>Raw JSON Data</h4>
+            <pre id="json-data" style="max-height: 400px; overflow-y: scroll;"></pre>
+            <button id="copy-button" class="btn">Copy to Clipboard</button>
+        </div>
+        <div class="modal-footer">
+            <a href="#!" class="modal-close btn">Close</a>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        var socket = io.connect('http://' + document.domain + ':' + location.port);
+
+        // Fetch initial data on page load
+        $.getJSON('/data', function(tasks_info) {
+            populateTable(tasks_info);
+        });
+
+        socket.on('update', function(new_tasks_info) {
+            populateTable(new_tasks_info);
+        });
+
+        function populateTable(tasks_info) {
+            var tbody = $('#coroutine-table tbody');
+            tbody.empty(); // Clear existing rows
+            tasks_info.forEach(function(infoArray) {
+                infoArray.forEach(function(info) {
+                    tbody.append('<tr>'
+                        + '<td>' + info.address + '</td>'
+                        + '<td>' + info.func + '</td>'
+                        + '<td>' + info.state + '</td>'
+                        + '<td>' + info.execution_time_ns + '</td>'
+                        + '</tr>');
+                });
+            });
+        }
+
+
+        // Refresh button functionality
+        $('#refresh-button').click(function() {
+            location.reload();
+        });
+
+        // View JSON button functionality
+        $('#view-json-button').click(function() {
+            $.getJSON('/data', function(tasks_info) {
+                $('#json-data').text(JSON.stringify(tasks_info, null, 2));
+                $('#json-modal').modal('open');
+            });
+        });
+
+        // Copy button functionality
+        $('#copy-button').click(function() {
+            const jsonText = $('#json-data').text();
+            navigator.clipboard.writeText(jsonText).then(function() {
+                alert('Copied to clipboard!');
+
+            }, function(err) {
+                console.error('Could not copy text: ', err);
+
+            });
+        });
+
+        $(document).ready(function(){
+            $('.modal').modal();
+        });
+    </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+
+</body>
+</html>
+
